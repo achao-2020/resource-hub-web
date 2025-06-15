@@ -1,0 +1,180 @@
+<template>
+  <view class="search-container">
+    <view class="input-bar">
+      <input type="text" placeholder="请输入搜索内容" v-model="keyword" @confirm="handleSearch" />
+      <image class="search-icon" src="/static/icons/search.png" @click="handleSearch"></image>
+    </view>
+    <view class="result-area" v-if="showResult">
+      <view class="result-list">
+        <view class="result-item" v-for="(item, index) in currentResults" :key="index">
+          <view class="overview">
+            <text class="overview-title">{{ item.title }}</text>
+            <text class="overview-desc">{{ item.description }}</text>
+          </view>
+          <view class="tags">
+            <text class="tag" v-for="(tag, tagIndex) in item.tags" :key="tagIndex">{{ tag }}</text>
+          </view>
+        </view>
+      </view>
+      <view class="pagination" v-if="totalPages > 1">
+        <button @click="handlePrev" :disabled="currentPage === 1">上一页</button>
+        <span class="current-page">当前页：<span class="current-page">{{ currentPage }}</span>/{{ totalPages }}</span>
+        <button @click="handleNext" :disabled="currentPage === totalPages">下一页</button>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+  export default {
+    data() {
+    return {
+      keyword: '',
+      showResult: false,
+      currentPage: 1,
+      totalPages: 0,
+      pageSize: 5,
+      results: [] // 模拟搜索结果数组
+    }
+  },
+  computed: {
+    currentResults() {
+      const start = (this.currentPage - 1) * this.pageSize;
+      const end = start + this.pageSize;
+      return this.results.slice(start, end);
+    }
+  },
+    methods: {
+      handleSearch() {
+        if (this.keyword.trim()) {
+          // 模拟搜索结果数据
+          this.results = Array.from({ length: 15 }, (_, i) => ({
+            title: `资源标题${i + 1}`,
+            description: `这是资源${i + 1}的描述内容，用于展示搜索结果的详细信息。`,
+            tags: [`标签${i + 1}-1`, `标签${i + 1}-2`]
+          }));
+          // 计算总页数
+          this.totalPages = Math.ceil(this.results.length / this.pageSize);
+          this.currentPage = 1; // 搜索时重置为第一页
+          this.showResult = true;
+        }
+      },
+      handlePrev() {
+        if (this.currentPage > 1) {
+          this.currentPage--;
+        }
+      },
+      handleNext() {
+        if (this.currentPage < this.totalPages) {
+          this.currentPage++;
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  .search-container {
+    padding: 20px;
+  }
+
+  .input-bar {
+    display: flex;
+    align-items: center;
+    border: 1px solid #eee;
+    border-radius: 20px;
+    padding: 8px 15px;
+    flex-direction: row; /* 显式设置水平排列 */
+  }
+
+  .input-bar input {
+    flex: 1;
+    margin-right: 10px;
+    font-size: 16px;
+    min-width: 0; /* 解决部分场景下输入框无法收缩的问题 */
+  }
+
+  .search-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .result-area {
+    margin-top: 5px;
+    padding: 10px;
+    font-size: 16px;
+    color: #333;
+	margin-bottom: 400px;
+	
+  }
+
+  .result-list {
+    margin-top: 20px;
+  }
+
+  .result-item {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .overview-title {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 5px;
+  }
+
+  .overview-desc {
+    font-family: 宋体;
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  .tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+	flex-direction: row; /* 显式设置水平排列 */
+  }
+
+  .tag {
+    border: 1px solid #ddd;
+    border-radius: 15px;
+    padding: 2px 8px;
+    font-size: 12px;
+    color: #444;
+    max-width: 100%; /* 限制标签最大宽度不超过父容器 */
+    word-break: break-all; /* 长文本自动换行 */
+  }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    justify-content: center;
+	flex-direction: row; /* 显式设置水平排列 */
+  }
+
+  .pagination button {
+    border: 1px solid #007aff;
+    background-color: #fff;
+    color: #007aff;
+    border-radius: 5px;
+    cursor: pointer;
+	font-size: 10px;
+  }
+
+  .pagination button:disabled {
+    border-color: #ccc;
+    color: #ccc;
+    cursor: not-allowed;
+  }
+
+  .current-page {
+    color: #007aff;
+    font-weight: bold;
+    font-size: 10px; /* 与上一页/下一页按钮字体大小一致 */
+	flex-direction: row; /* 显式设置水平排列 */
+  }
+</style>

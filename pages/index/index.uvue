@@ -1,0 +1,111 @@
+<template>
+	<view class="container">
+		<!-- 内容显示区域（80%） -->
+		<view class="content">
+			<search v-if="currentTab === '搜索'"></search>
+			<view v-if="currentTab === '分享'" class="share-content">分享内容区域</view>
+			<view v-if="currentTab === '收藏'" class="collect-content">收藏内容区域</view>
+			<view v-if="currentTab === '我的'" class="mine-content">我的内容区域</view>
+		</view>
+
+		<!-- 底部导航栏（20%） -->
+		<view class="tab-bar">
+			<view
+				class="tab-item"
+				:class="{ active: currentTab === '搜索' }"
+				@click="handleTabClick('搜索')"
+			>
+				搜索
+			</view>
+			<view
+				class="tab-item"
+				:class="{ active: currentTab === '分享' }"
+				@click="handleTabClick('分享')"
+			>
+				分享
+			</view>
+			<view
+				class="tab-item"
+				:class="{ active: currentTab === '收藏' }"
+				@click="handleTabClick('收藏')"
+			>
+				收藏
+			</view>
+			<view
+				class="tab-item"
+				:class="{ active: currentTab === '我的' }"
+				@click="handleTabClick('我的')"
+			>
+				我的
+			</view>
+		</view>
+	</view>
+</template>
+
+<script>
+import search from '@/pages/search/search.uvue'
+	export default {
+		components: {
+			search
+		},
+		data() {
+			return {
+				title: '资源中心',
+				currentTab: '搜索' // 默认显示搜索菜单
+			}
+		},
+		onLoad() {
+
+		},
+		methods: {
+			handleTabClick(tabName) {
+				this.currentTab = tabName;
+			}
+		}
+	}
+</script>
+
+<style>
+	.container {
+		height: 100vh;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.content {
+		flex: 92;
+		padding: 20px;
+	}
+
+	.tab-bar {
+		flex: 8;
+		display: flex;
+		flex-direction: row; /* 显式设置水平排列 */
+		background-color: #f8f8f8;
+		border-top: 1px solid #eee;
+		min-height: 30px; /* 添加最小高度确保文字显示空间 */
+	}
+
+	.tab-item {
+		flex: 1;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		color: #666; /* 修改为更明显的灰色 */
+		font-size: 16px;
+		cursor: pointer;
+	}
+
+	.tab-item.active {
+		color: #007aff;
+		font-weight: bold;
+	}
+
+	.search-content,
+	.share-content,
+	.collect-content,
+	.mine-content {
+		height: 100%;
+		font-size: 18px;
+	}
+</style>

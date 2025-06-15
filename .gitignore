@@ -1,0 +1,16 @@
+# 构建输出
+unpackage/dist/
+
+# 缓存文件
+unpackage/cache/
+
+# IDE 配置
+.idea/
+.vscode/
+
+# 本地依赖（如存在）
+node_modules/
+
+# 系统生成文件
+Thumbs.db
+.DS_Store
