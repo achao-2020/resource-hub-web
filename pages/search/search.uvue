@@ -6,7 +6,7 @@
     </view>
     <view class="result-area" v-if="showResult">
       <view class="result-list">
-        <view class="result-item" v-for="(item, index) in currentResults" :key="index">
+        <view class="result-item" v-for="(item, index) in currentResults" :key="index" @click="goDetail(item.id)">
           <view class="overview">
             <text class="overview-title">{{ item.title }}</text>
             <text class="overview-desc">{{ item.description }}</text>
@@ -26,6 +26,7 @@
 </template>
 
 <script>
+  import { API_BASE_URL } from '../../config.js'
   export default {
     data() {
     return {
@@ -45,18 +46,48 @@
     }
   },
     methods: {
+      goDetail(id) {
+        uni.navigateTo({
+          url: '/pages/detail/detail?id=' + id
+        });
+      },
       handleSearch() {
         if (this.keyword.trim()) {
-          // 模拟搜索结果数据
-          this.results = Array.from({ length: 15 }, (_, i) => ({
-            title: `资源标题${i + 1}`,
-            description: `这是资源${i + 1}的描述内容，用于展示搜索结果的详细信息。`,
-            tags: [`标签${i + 1}-1`, `标签${i + 1}-2`]
-          }));
-          // 计算总页数
-          this.totalPages = Math.ceil(this.results.length / this.pageSize);
-          this.currentPage = 1; // 搜索时重置为第一页
-          this.showResult = true;
+          const that = this;
+          uni.request({
+             url: `${API_BASE_URL}/api/resources/page`,
+             method: 'POST',
+             headers: {
+               'Content-Type': 'application/json; charset=UTF-8'
+             },
+             data: {
+               pageNum: 1,
+               pageSize: this.pageSize,
+               param: {
+                 name: this.keyword.trim(),
+                 needTag: true
+               }
+             },
+            success(res) {
+			  console.log(res)
+              if (res.data.code === 200) {
+                that.results = res.data.data.records.map(item => ({
+                  id: item.id,
+                  title: item.name,
+                  description: item.description,
+                  tags: item.tagVos.map(tag => tag.name)
+                }));
+                that.totalPages = Math.ceil(res.data.data.total / that.pageSize);
+                that.currentPage = 1;
+                that.showResult = true;
+              } else {
+                uni.showToast({ title: '搜索失败：' + res.data.message, icon: 'none' });
+              }
+            },
+            fail(err) {
+              uni.showToast({ title: '网络请求失败', icon: 'none' });
+            }
+          });
         }
       },
       handlePrev() {

@@ -1,0 +1,118 @@
+<template>
+  <view class="detail-container">
+    <view class="info-item">
+      <text class="label">名称：</text>
+      <text class="value">{{ detail.name }}</text>
+    </view>
+    <view class="info-item">
+      <text class="label">类型：</text>
+      <text class="value">{{ detail.type }}</text>
+    </view>
+    <view class="info-item">
+      <text class="label">描述：</text>
+      <text class="value" @click="toggleExpand">
+        {{ isExpanded ? detail.description : (detail.description.slice(0, 200) + '...') }}
+      </text>
+    </view>
+    <view class="info-item">
+      <text class="label">标签：</text>
+      <view class="tags">
+        <text class="tag" v-for="(tag, idx) in detail.tagVos" :key="idx">{{ tag.name }}</text>
+      </view>
+    </view>
+    <view class="info-item">
+      <text class="label">链接：</text>
+      <text class="value" @click="copyLink">{{ detail.shareLink }}</text>
+    </view>
+    <view class="info-item">
+      <text class="label">上传日期：</text>
+      <text class="value">{{ detail.createTime }}</text>
+    </view>
+  </view>
+</template>
+
+<script>
+  import { API_BASE_URL } from '../../config.js'
+  export default {
+    data() {
+      return {
+        detail: {},
+        isExpanded: false
+      }
+    },
+    onLoad(option) {
+      this.fetchDetail(option.id);
+    },
+    methods: {
+      fetchDetail(id) {
+        uni.request({
+          url: `${API_BASE_URL}/api/resources/${id}`,
+          method: 'GET',
+          success: (res) => {
+            if (res.data.code === 200) {
+              this.detail = res.data.data;
+            } else {
+              uni.showToast({ title: '获取详情失败', icon: 'none' });
+            }
+          },
+          fail: (err) => {
+            uni.showToast({ title: '网络请求失败', icon: 'none' });
+          }
+        });
+      },
+      toggleExpand() {
+        this.isExpanded = !this.isExpanded;
+        if (this.isExpanded) {
+          uni.showModal({
+            title: '完整描述',
+            content: this.detail.description,
+            showCancel: false
+          });
+        }
+      },
+      copyLink() {
+        uni.setClipboardData({
+          data: this.detail.shareLink,
+          success: () => {
+            uni.showToast({ title: '链接已复制', icon: 'none' });
+          }
+        });
+      }
+    }
+  }
+</script>
+
+<style>
+  .detail-container {
+    padding: 20px;
+  }
+  .info-item {
+    display: flex;
+    margin-bottom: 15px;
+  }
+  .label {
+    width: 80px;
+    color: #666;
+    font-weight: bold;
+  }
+  .value {
+    flex: 1;
+    color: #333;
+  }
+  .tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+	flex-direction: row; 
+  }
+  .tag {
+    display: inline-block;
+    border: 1px solid #ddd;
+    border-radius: 15px;
+    padding: 2px 8px;
+    font-size: 12px;
+    color: #444;
+	border-radius: 15px;
+    white-space: nowrap; /* 防止内容换行 */
+  }
+</style>
