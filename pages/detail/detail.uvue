@@ -22,7 +22,11 @@
     </view>
     <view class="info-item">
       <text class="label">链接：</text>
-      <text class="value" @click="copyLink">{{ detail.shareLink }}</text>
+      <text 
+        class="value copy-link" 
+        :class="{ 'copying': isCopying }"
+        @click="copyLink"
+      >{{ detail.shareLink }}</text>
     </view>
     <view class="info-item">
       <text class="label">上传日期：</text>
@@ -37,7 +41,8 @@
     data() {
       return {
         detail: {},
-        isExpanded: false
+        isExpanded: false,
+        isCopying: false
       }
     },
     onLoad(option) {
@@ -71,10 +76,29 @@
         }
       },
       copyLink() {
+        if (this.isCopying) return; // 防止重复点击
+        this.isCopying = true;
+        
         uni.setClipboardData({
           data: this.detail.shareLink,
           success: () => {
-            uni.showToast({ title: '链接已复制', icon: 'none' });
+            uni.showToast({ 
+              title: '链接已复制到剪贴板', 
+              icon: 'success',
+              duration: 2000
+            });
+          },
+          fail: (err) => {
+            uni.showModal({
+              title: '复制失败',
+              content: '请手动复制链接：' + this.detail.shareLink,
+              showCancel: false
+            });
+          },
+          complete: () => {
+            setTimeout(() => {
+              this.isCopying = false;
+            }, 500); // 防抖处理
           }
         });
       }
@@ -98,6 +122,16 @@
   .value {
     flex: 1;
     color: #333;
+  }
+  .copy-link {
+    color: #007AFF;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .copy-link.copying {
+    opacity: 0.6;
+    transform: scale(0.98);
   }
   .tags {
     display: flex;
