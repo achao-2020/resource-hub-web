@@ -3,7 +3,7 @@
 		<!-- 内容显示区域（80%） -->
 		<view class="content">
 			<search v-if="currentTab === '搜索'"></search>
-			<view v-if="currentTab === '分享'" class="share-content">分享内容区域</view>
+			<share v-if="currentTab === '分享'"></share>
 			<view v-if="currentTab === '收藏'" class="collect-content">收藏内容区域</view>
 			<view v-if="currentTab === '我的'" class="mine-content">我的内容区域</view>
 		</view>
@@ -44,9 +44,11 @@
 
 <script>
 import search from '@/pages/search/search.uvue'
+import share from '@/pages/share/share.uvue'
 	export default {
 		components: {
-			search
+			search,
+			share
 		},
 		data() {
 			return {
