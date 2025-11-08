@@ -188,8 +188,8 @@ export default {
             this.resetForm()
             
             // 延迟跳转到搜索页
-            setTimeout(() => {
-              uni.switchTab({
+          setTimeout(() => {
+              uni.navigateTo({
                 url: '/pages/index/index'
               })
             }, 1500)
