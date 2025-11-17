@@ -43,11 +43,35 @@
         <view class="tag-container">
           <view class="tag-input-wrapper">
             <input 
-              v-model="tagInput" 
+              :value="tagInput" 
               class="tag-input" 
               placeholder="输入标签后按回车添加"
-              @confirm="addTag"
+              @input="handleTagInput"
+              @confirm="confirmTag"
+              @focus="handleTagFocus"
+              @blur="handleTagBlur"
             />
+          </view>
+          <!-- 标签搜索加载状态 -->
+          <view v-if="searchLoading" class="search-loading">
+            <text>搜索中...</text>
+          </view>
+          <!-- 标签建议下拉框 -->
+
+          
+
+          
+          <!-- 原有的条件下拉框 -->
+          <view v-if="showSuggestions && tagSuggestions.length > 0" class="suggestions-dropdown">
+            <view 
+              v-for="(tag, index) in tagSuggestions" 
+              :key="index"
+              class="suggestion-item"
+              @click="selectSuggestion(tag)"
+              @tap="selectSuggestion(tag)"
+            >
+              {{ tag }}
+            </view>
           </view>
           <view class="selected-tags">
             <view 
@@ -98,14 +122,19 @@ export default {
         tagNames: [],
         shareLink: ''
       },
-      typeOptions: [
+    typeOptions: [
         '电影', '电视剧', '动漫', '综艺', '纪录片', 
         '电影片段', '音乐', '游戏', '软件', '工具', '其他'
       ],
       typeIndex: -1,
       tagInput: '',
       linkError: '',
-      isSubmitting: false
+      isSubmitting: false,
+      // 标签搜索相关
+      tagSuggestions: [], // 标签搜索建议列表
+      showSuggestions: false, // 是否显示建议列表
+      searchTimer: null, // 防抖定时器
+      searchLoading: false // 搜索加载状态
     }
   },
   computed: {
@@ -123,13 +152,107 @@ export default {
       this.typeIndex = e.detail.value
       this.form.type = this.typeOptions[this.typeIndex]
     },
-    addTag() {
+    // 处理标签输入，添加防抖
+    handleTagInput(e) {
+      const value = e.detail.value
+      this.tagInput = value
+      
+      // 清除之前的定时器
+      if (this.searchTimer) {
+        clearTimeout(this.searchTimer)
+      }
+      
+      // 设置新的定时器，0.3秒后触发搜索
+      if (value.trim()) {
+        this.searchTimer = setTimeout(() => {
+          this.searchTags(value.trim())
+        }, 300)
+      } else {
+        this.tagSuggestions = []
+        this.showSuggestions = false
+      }
+    },
+    
+    // 处理标签输入框聚焦
+    handleTagFocus() {
+      if (this.tagSuggestions.length > 0) {
+        this.showSuggestions = true
+      }
+    },
+    
+    // 处理标签输入框失焦（延迟隐藏，让点击事件能够触发）
+    handleTagBlur() {
+      // 延迟隐藏建议列表，以便点击事件能够触发
+      setTimeout(() => {
+        this.showSuggestions = false
+      }, 200)
+    },
+    
+    // 确认标签（回车时）
+    confirmTag() {
       const tag = this.tagInput.trim()
       if (tag && !this.form.tagNames.includes(tag)) {
         this.form.tagNames.push(tag)
         this.tagInput = ''
+        this.tagSuggestions = []
+        this.showSuggestions = false
       }
     },
+    
+    // 选择建议标签
+    selectSuggestion(tag) {
+      if (!this.form.tagNames.includes(tag)) {
+        this.form.tagNames.push(tag)
+        this.tagInput = ''
+        this.showSuggestions = false
+      }
+    },
+    
+    // 搜索标签
+    searchTags(keyword) {
+      console.log('搜索标签关键词:', keyword)
+      if (!keyword || this.searchLoading) return
+      
+      this.searchLoading = true
+      
+      // 实际API调用
+      uni.request({
+        url: `${API_BASE_URL}/api/tags/page`,
+        method: 'POST',
+        data: {
+          param: {
+            name: keyword
+          }
+        },
+        success: (res) => {
+          console.log('标签搜索API响应:', res.data)
+          if (res.data && res.data.code === 200 && res.data.data) {
+            // 提取标签名称列表，过滤掉已选中的标签
+            const tagNames = res.data.data.records
+              .filter(item => item && item.name)
+              .map(item => item.name)
+              .filter(tag => !this.form.tagNames.includes(tag))
+            
+            console.log('过滤后的标签建议:', tagNames)
+            this.tagSuggestions = tagNames
+            this.showSuggestions = true
+            console.log('设置showSuggestions:', this.showSuggestions)
+          } else {
+            this.tagSuggestions = []
+            this.showSuggestions = false
+            console.log('API响应异常，设置showSuggestions:', this.showSuggestions)
+          }
+        },
+        fail: (err) => {
+          console.error('标签搜索失败:', err)
+          this.tagSuggestions = []
+          this.showSuggestions = false
+        },
+        complete: () => {
+            this.searchLoading = false
+          }
+        })
+      },
     removeTag(index) {
       this.form.tagNames.splice(index, 1)
     },
@@ -281,11 +404,68 @@ export default {
     padding: 8px;
     min-height: 44px;
     box-sizing: border-box;
+    position: relative;
+    /* 确保容器不会截断子元素 */
+    overflow: visible;
+    z-index: 10;
   }
 
 .tag-input-wrapper {
     margin-bottom: 8px;
-    overflow: hidden;
+    position: relative;
+    /* 移除overflow: hidden，防止截断下拉框 */
+  }
+  
+  /* 搜索加载状态样式 */
+  .search-loading {
+    padding: 8px 12px;
+    color: #999;
+    font-size: 14px;
+    text-align: center;
+  }
+  
+  /* 标签建议下拉框样式 */
+  .suggestions-dropdown {
+    /* 固定定位，确保在视口中可见 */
+    position: fixed;
+    top: 200px;
+    left: 20px;
+    right: 20px;
+    /* 与页面背景色一致 */
+    background-color: #ffffff;
+    /* 与其他输入框边框一致 */
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    /* 限制最大高度 */
+    max-height: 180px;
+    overflow-y: auto;
+    /* 确保在其他元素上方 */
+    z-index: 1000;
+    /* 与页面卡片阴影风格一致 */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    /* 移动端优化 */
+    -webkit-overflow-scrolling: touch;
+    /* 添加内边距 */
+    padding: 4px 0;
+  }
+  
+  .suggestion-item {
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: normal;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    line-height: 1.5;
+  }
+  
+  .suggestion-item:hover {
+    background-color: #f5f5f5;
+  }
+  
+  .suggestion-item:active {
+    background-color: #e6f7ff;
+    color: #1890ff;
   }
 
 .tag-input {
