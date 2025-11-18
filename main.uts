@@ -1,8 +1,10 @@
 import App from './App.uvue'
-
+import loginCheckMixin from './mixins/loginCheck.js'
 import { createSSRApp } from 'vue'
 export function createApp() {
 	const app = createSSRApp(App)
+	// 全局注册登录检查混入
+	app.mixin(loginCheckMixin)
 	return {
 		app
 	}

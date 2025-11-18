@@ -1,11 +1,40 @@
 <template>
 	<view class="container">
+		<!-- 登录状态显示区域 -->
+		<view class="login-status" v-if="currentTab !== '搜索' && currentTab !== '分享'">
+			<view class="status-info">
+				<text>登录状态: {{ isLoggedIn ? '已登录' : '未登录' }}</text>
+			</view>
+			<view class="user-info" v-if="userInfo">
+				<text>用户昵称: {{ userInfo.nickName }}</text>
+			</view>
+			<button class="login-btn" @click="triggerLogin" v-if="!isLoggedIn">
+				点击登录
+			</button>
+			<button class="test-btn" @click="clearLoginStatus">
+				清除登录状态(测试)
+			</button>
+		</view>
+
 		<!-- 内容显示区域（80%） -->
 		<view class="content">
 			<search v-if="currentTab === '搜索'"></search>
 			<share v-if="currentTab === '分享'"></share>
 			<view v-if="currentTab === '收藏'" class="collect-content">收藏内容区域</view>
-			<view v-if="currentTab === '我的'" class="mine-content">我的内容区域</view>
+			<view v-if="currentTab === '我的'" class="mine-content">
+				<view class="mine-header">
+					<view v-if="userInfo" class="avatar-container">
+						<image :src="userInfo.avatarUrl" class="avatar" mode="aspectFill"></image>
+						<text class="nickname">{{ userInfo.nickName }}</text>
+						<button class="logout-btn" @click="handleLogout">退出登录</button>
+					</view>
+					<view v-else class="no-login">
+						<text>请先登录</text>
+						<button class="login-btn" @click="triggerLogin">立即登录</button>
+					</view>
+				</view>
+				<view class="mine-content">我的内容区域</view>
+			</view>
 		</view>
 
 		<!-- 底部导航栏（20%） -->
@@ -45,6 +74,7 @@
 <script>
 import search from '@/pages/search/search.uvue'
 import share from '@/pages/share/share.uvue'
+import { getUserInfo, clearUserInfo } from '@/utils/auth.js'
 	export default {
 		components: {
 			search,
@@ -53,15 +83,92 @@ import share from '@/pages/share/share.uvue'
 		data() {
 			return {
 				title: '资源中心',
-				currentTab: '搜索' // 默认显示搜索菜单
+				currentTab: '搜索', // 默认显示搜索菜单
+				isLoggedIn: false,
+				userInfo: null
 			}
 		},
 		onLoad() {
-
+			console.log('页面加载，登录检查将自动执行');
+		},
+		// 登录成功回调
+		onLoginSuccess(userInfo) {
+			console.log('登录成功:', userInfo);
+			uni.showToast({
+				title: '登录成功',
+				icon: 'success'
+			});
+		},
+		// 登录失败回调
+		onLoginFail(message) {
+			console.log('登录失败:', message);
 		},
 		methods: {
 			handleTabClick(tabName) {
 				this.currentTab = tabName;
+			},
+			// 手动清除登录状态（用于测试）
+			clearLoginStatus() {
+				console.log('清除登录状态按钮被点击');
+				// 调用清除用户信息函数
+				clearUserInfo()
+					.then(() => {
+						console.log('清除用户信息成功(测试模式)');
+						// 更新页面登录状态
+						this.isLoggedIn = false;
+						this.userInfo = null;
+						// 显示清除成功提示
+						uni.showToast({
+							title: '已清除登录状态',
+							icon: 'none'
+						});
+					})
+					.catch(error => {
+						console.error('清除登录状态失败:', error);
+						uni.showToast({
+							title: '清除登录状态失败',
+							icon: 'error'
+						});
+					});
+			},
+			// 处理退出登录
+			handleLogout() {
+				console.log('退出登录按钮被点击');
+				// 显示确认对话框
+				uni.showModal({
+					title: '退出登录',
+					content: '确定要退出登录吗？',
+					success: (res) => {
+						if (res.confirm) {
+							console.log('用户确认退出登录');
+							// 调用清除用户信息函数
+							clearUserInfo()
+								.then(() => {
+									console.log('清除用户信息成功');
+									// 更新页面登录状态
+									this.isLoggedIn = false;
+									this.userInfo = null;
+									// 显示退出成功提示
+									uni.showToast({
+										title: '退出登录成功',
+										icon: 'success'
+									});
+								})
+								.catch(error => {
+									console.error('退出登录失败:', error);
+									uni.showToast({
+										title: '退出登录失败',
+										icon: 'error'
+									});
+								});
+						} else {
+							console.log('用户取消退出登录');
+						}
+					},
+					fail: (error) => {
+						console.error('显示退出登录确认框失败:', error);
+					}
+				});
 			}
 		}
 	}
@@ -109,5 +216,85 @@ import share from '@/pages/share/share.uvue'
 	.mine-content {
 		height: 100%;
 		font-size: 18px;
+	}
+	
+	.login-status {
+		padding: 20px;
+		background-color: #f8f8f8;
+		margin-bottom: 20px;
+		border-radius: 8px;
+	}
+	
+	.status-info {
+		margin-bottom: 10px;
+	}
+	
+	.user-info {
+		margin-bottom: 10px;
+		color: #007aff;
+	}
+	
+	.login-btn {
+		background-color: #007aff;
+		color: white;
+		margin-top: 10px;
+	}
+	
+	.mine-header {
+		text-align: center;
+		padding: 30px 0;
+		background-color: #f8f8f8;
+		margin-bottom: 20px;
+		border-radius: 8px;
+	}
+	
+	.avatar-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+	
+	.avatar {
+		width: 80px;
+		height: 80px;
+		border-radius: 40px;
+		margin-bottom: 10px;
+	}
+	
+	.nickname {
+		font-size: 18px;
+		font-weight: bold;
+		color: #333;
+	}
+	
+	.no-login {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+	
+	.logout-btn {
+				margin-top: 10rpx;
+				background-color: #ff4d4f;
+				color: white;
+				font-size: 24rpx;
+				padding: 10rpx 20rpx;
+				line-height: 1.2;
+				height: auto;
+			}
+
+			.test-btn {
+				margin-top: 10rpx;
+				background-color: #faad14;
+				color: white;
+				font-size: 24rpx;
+				padding: 10rpx 20rpx;
+				line-height: 1.2;
+				height: auto;
+			}
+	
+	.no-login text {
+		margin-bottom: 10px;
+		color: #666;
 	}
 </style>
